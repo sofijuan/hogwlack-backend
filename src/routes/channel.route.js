@@ -1,41 +1,53 @@
-import express from "express";
+import express from 'express';
 import {
-  getChannelsInWorkspace,
+  validateChannel,
+  validateChannelSearch
+} from '../middlewares/validation.middleware.js';
+import { authenticateUser } from '../middlewares/auth.middleware.js';
+import { validateWorkspaceMembership } from '../middlewares/workspace.middleware.js';
+import {
   createChannel,
-  getChannelById,
-  updateChannel,
   deleteChannel,
-} from "../controllers/channel.controller.js";
-import { validateChannel } from "../middlewares/validation.middleware.js";
-import { authenticateUser } from "../middlewares/auth.middleware.js";
-import { validateWorkspaceMembership } from "../middlewares/workspace.middleware.js";
+  searchChannels,
+  updateChannel,
+  getChannelById,
+  joinChannel
+} from '../controllers/channel.controller.js';
 
-const router = express.Router();
+import {
+  validateChannelOwnership,
+  validateChannelMembership
+} from '../middlewares/channel.middleware.js';
 
-// Ver todos los Canales dentro de un Workspace específico
-router.get("/:workspaceId", authenticateUser, getChannelsInWorkspace);
+const router = express.Router({ mergeParams: true });
 
-// Crear un Canal dentro de un Workspace específico
 router.post(
-  "/:workspaceId",
+  '/',
   validateChannel,
   authenticateUser,
   validateWorkspaceMembership,
   createChannel
 );
 
-// Obtener un Canal específico dentro de un Workspace
-router.get("/:workspaceId/:channelId", authenticateUser, getChannelById);
+router.delete(
+  '/:channelId',
+  authenticateUser,
+  validateChannelOwnership,
+  deleteChannel
+);
 
-// Actualizar un Canal dentro de un Workspace
 router.put(
-  "/:workspaceId/:channelId",
+  '/:channelId',
   validateChannel,
   authenticateUser,
+  validateChannelOwnership,
   updateChannel
 );
 
-// Eliminar un Canal dentro de un Workspace
-router.delete("/:workspaceId/:channelId", authenticateUser, deleteChannel);
+router.get('/search', authenticateUser, searchChannels);
+
+router.post('/:channelId/join', authenticateUser, joinChannel);
+
+router.get('/:channelId', authenticateUser, getChannelById);
 
 export default router;

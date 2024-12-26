@@ -1,11 +1,11 @@
-import { User } from "../models/user.model.js";
-import jwt from "jsonwebtoken";
-import bcrypt from "bcrypt";
-import ENVIRONMENT from "../config/environment.config.js";
+import { User } from '../models/user.model.js';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
+import ENVIRONMENT from '../config/environment.config.js';
 import {
   sendResetPasswordEmail,
-  sendVerificationEmail,
-} from "../utils/utils.js";
+  sendVerificationEmail
+} from '../utils/utils.js';
 
 // Registro (Sign Up)
 export const register = async (req, res) => {
@@ -16,10 +16,10 @@ export const register = async (req, res) => {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       if (existingUser.isVerified) {
-        return res.status(400).json({ message: "El email ya está registrado" });
+        return res.status(400).json({ message: 'El email ya está registrado' });
       }
       sendVerificationEmail(email, existingUser._id);
-      return res.status(200).json({ message: "Verificar email" });
+      return res.status(200).json({ message: 'Verificar email' });
     }
 
     // Crear usuario
@@ -28,7 +28,7 @@ export const register = async (req, res) => {
       email,
       password,
       isVerified: false,
-      image: image ? image : undefined,
+      image: image ? image : undefined
     });
     await newUser.save();
 
@@ -37,13 +37,13 @@ export const register = async (req, res) => {
 
     res.status(201).json({
       message:
-        "Usuario registrado exitosamente. Por favor verifica tu correo electrónico.",
+        'Usuario registrado exitosamente. Por favor verifica tu correo electrónico.'
     });
   } catch (error) {
-    console.log("error", error);
+    console.log('error', error);
     res
       .status(500)
-      .json({ message: "Error al registrar usuario", detail: error });
+      .json({ message: 'Error al registrar usuario', detail: error });
   }
 };
 
@@ -55,33 +55,33 @@ export const login = async (req, res) => {
     // Buscar usuario por email
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: "Usuario no encontrado" });
+      return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
     // Verificar si la cuenta está verificada
     if (!user.isVerified) {
       return res.status(403).json({
         message:
-          "Por favor verifica tu correo electrónico antes de iniciar sesión.",
+          'Por favor verifica tu correo electrónico antes de iniciar sesión.'
       });
     }
 
     // Verificar contraseña
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(400).json({ message: "Contraseña o email incorrecto" });
+      return res.status(400).json({ message: 'Contraseña o email incorrecto' });
     }
 
     // Generar token JWT
     const token = jwt.sign(
       { id: user._id, email: user.email, role: user.role },
       ENVIRONMENT.SECRET_KEY,
-      { expiresIn: "1d" }
+      { expiresIn: '1d' }
     );
 
     res.status(200).json({ token });
   } catch (error) {
-    res.status(500).json({ message: "Error al iniciar sesión", error });
+    res.status(500).json({ message: 'Error al iniciar sesión', error });
   }
 };
 
@@ -96,15 +96,15 @@ export const verifyAccount = async (req, res) => {
     // Marcar al usuario como verificado
     const user = await User.findById(decoded.id);
     if (!user) {
-      return res.status(404).json({ message: "Usuario no encontrado" });
+      return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
     user.isVerified = true;
     await user.save();
 
-    res.status(200).json({ message: "Cuenta verificada exitosamente" });
+    res.status(200).json({ message: 'Cuenta verificada exitosamente' });
   } catch (error) {
-    res.status(400).json({ message: "Token inválido o expirado", error });
+    res.status(400).json({ message: 'Token inválido o expirado', error });
   }
 };
 
@@ -116,17 +116,17 @@ export const forgotPassword = async (req, res) => {
     // Buscar usuario por email
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: "Usuario no encontrado" });
+      return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
     // Envio de email de olvido de contraseña
     sendResetPasswordEmail(email, user._id);
 
-    res.status(200).json({ message: "Correo de recuperación enviado" });
+    res.status(200).json({ message: 'Correo de recuperación enviado' });
   } catch (error) {
     res
       .status(500)
-      .json({ message: "Error al enviar correo de recuperación", error });
+      .json({ message: 'Error al enviar correo de recuperación', error });
   }
 };
 
@@ -142,24 +142,54 @@ export const resetPassword = async (req, res) => {
     // Buscar al usuario correspondiente
     const user = await User.findById(decoded.id);
     if (!user) {
-      return res.status(404).json({ message: "Usuario no encontrado" });
+      return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
     // Actualizar la contraseña del usuario
     user.password = password;
     await user.save();
 
-    res.status(200).json({ message: "Contraseña restablecida exitosamente" });
+    res.status(200).json({ message: 'Contraseña restablecida exitosamente' });
   } catch (error) {
-    res.status(400).json({ message: "Token inválido o expirado", error });
+    res.status(400).json({ message: 'Token inválido o expirado', error });
   }
 };
 
-// Logout
-export const logout = async (req, res) => {
+export const loggedUserProfile = async (req, res) => {
   try {
-    res.status(200).json({ message: "Sesión cerrada correctamente" });
+    const user = await User.findById(req.user.id);
+    res.status(200).json({
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      image: user.image
+    });
   } catch (error) {
-    res.status(500).json({ message: "Error al cerrar sesión", error });
+    res.status(500).json({ message: 'Error al obtener perfil', error });
+  }
+};
+
+export const updateLoggedUserProfile = async (req, res) => {
+  try {
+    const { id } = req.user;
+    const { username, image } = req.body;
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      {
+        username,
+        image
+      },
+      { new: true }
+    );
+    res.status(200).json({
+      _id: updatedUser._id,
+      username: updatedUser.username,
+      email: updatedUser.email,
+      image: updatedUser.image
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: 'Error al actualizar el workspace', error });
   }
 };

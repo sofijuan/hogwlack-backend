@@ -1,4 +1,4 @@
-import express from "express";
+import express from 'express';
 import {
   getUserWorkspaces,
   createWorkspace,
@@ -6,50 +6,46 @@ import {
   updateWorkspace,
   deleteWorkspace,
   searchWorkspaces,
-  joinWorkspace,
-} from "../controllers/workspace.controller.js";
+  joinWorkspace
+} from '../controllers/workspace.controller.js';
+
 import {
   validateWorkspace,
   validateWorkspaceSearch,
-  validateWorkspaceUpdate,
-} from "../middlewares/validation.middleware.js";
-import { authenticateUser } from "../middlewares/auth.middleware.js";
-import { validateWorkspaceOwnership } from "../middlewares/workspace.middleware.js";
+  validateWorkspaceUpdate
+} from '../middlewares/validation.middleware.js';
+import { authenticateUser } from '../middlewares/auth.middleware.js';
+import { validateWorkspaceOwnership } from '../middlewares/workspace.middleware.js';
 
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 
 // Unirse a un workspace
-router.post("/join/:_id", authenticateUser, joinWorkspace);
+router.post('/join/:_id', authenticateUser, joinWorkspace);
 
 // Ver todos los Workspaces a los que está unido el usuario
-router.get("/", authenticateUser, getUserWorkspaces);
+router.get('/', authenticateUser, getUserWorkspaces);
 
 // Crear un Workspace
-router.post("/", authenticateUser, validateWorkspace, createWorkspace);
+router.post('/', validateWorkspace, authenticateUser, createWorkspace);
 
 // Ver todos los Workspaces existentes en base a una busqueda
-router.get(
-  "/search",
-  authenticateUser,
-  validateWorkspaceSearch,
-  searchWorkspaces
-);
+router.get('/search', authenticateUser, searchWorkspaces);
 
 // Obtener un Workspace específico por ID
-router.get("/:_id", authenticateUser, getWorkspaceById);
+router.get('/:_id', authenticateUser, getWorkspaceById);
 
 // Actualizar un Workspace
 router.put(
-  "/:_id",
-  authenticateUser,
+  '/:_id',
   validateWorkspaceUpdate,
+  authenticateUser,
   validateWorkspaceOwnership,
   updateWorkspace
 );
 
 // Eliminar un Workspace
 router.delete(
-  "/:_id",
+  '/:_id',
   authenticateUser,
   validateWorkspaceOwnership,
   deleteWorkspace
